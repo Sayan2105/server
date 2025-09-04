@@ -1,10 +1,3 @@
-const express = require("express");
-const router = express.Router();
-const axios = require("axios");
-
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
-const TMDB_BASE_URL = "https://api.themoviedb.org/3";
-
 // POST /api/movies/discover - discover movies with filters
 router.post("/discover", async (req, res) => {
   const filters = req.body || {};
@@ -14,12 +7,13 @@ router.post("/discover", async (req, res) => {
   const minRuntime = filters.min_runtime;
   const maxRuntime = filters.max_runtime;
 
+  // IMPORTANT: Default to false for adult content unless explicitly set
   const includeAdult = filters.adult === true ? true : false;
 
   const params = {
     api_key: TMDB_API_KEY,
     sort_by: "popularity.desc",
-    include_adult: includeAdult,
+    include_adult: includeAdult, // This filters out adult content
     page,
     "vote_average.gte": minRating,
   };
@@ -46,36 +40,3 @@ router.post("/discover", async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to fetch movies" });
   }
 });
-
-// POST /api/movies/search - search movies by query string
-router.post("/search", async (req, res) => {
-  const query = req.body.query;
-  const page = req.body.page || 1;
-
-  if (!query || typeof query !== "string") {
-    return res
-      .status(400)
-      .json({ success: false, error: "Invalid or missing search query" });
-  }
-
-  const params = {
-    api_key: TMDB_API_KEY,
-    query,
-    page,
-    include_adult: false,
-  };
-
-  try {
-    const url = `${TMDB_BASE_URL}/search/movie`;
-    const response = await axios.get(url, { params });
-    res.json({ success: true, ...response.data });
-  } catch (error) {
-    console.error(
-      "Error searching movies:",
-      error.response?.data || error.message
-    );
-    res.status(500).json({ success: false, error: "Failed to search movies" });
-  }
-});
-
-module.exports = router;
